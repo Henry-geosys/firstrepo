@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.geosys.modules.sys.dao.SysPanoDao">
+
+    <!-- <insert id="insertSysPano" parameterType="com.geosys.modules.sys.entity.SysPanoEntity">-->
+    <insert id="insertBatch">
+    INSERT INTO sys_pano (pano_name, rotation_x, rotation_y, rotation_z,z,geom)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.panoName}, #{item.rotationX}, #{item.rotationY}, #{item.rotationZ},#{item.z},#{item.geom})
+            <!-- (#{panoName}, #{Omega}, #{Phi}, #{Kappa})-->
+        </foreach>
+    </insert>
+    <insert id="insertAllColumnsBatch">
+        INSERT INTO sys_pano (pano_id, layer_id, pano_name, url, geom, z, rotation_x, rotation_y, rotation_z, depth_url)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.panoId}, #{item.layerId}, #{item.panoName}, #{item.url}, #{item.geom}, #{item.z}, #{item.rotationX}, #{item.rotationY}, #{item.rotationZ}, #{item.depthUrl})
+        </foreach>
+    </insert>
+    <!-- Define a custom SQL query to convert WKB to GeoJSON -->
+    <select id="convertToGeoJSON" parameterType="string" resultType="string">
+        SELECT ST_AsGeoJSON(ST_GeomFromWKB(CAST(DECODE(#{binaryGeometry},'hex') AS geometry)))
+    </select>
+    <select id="getPanoById" resultType="com.geosys.modules.sys.entity.SysPanoEntity">
+        SELECT pano_id as panoId,
+        layer_id as layerId,
+        pano_name as panoName,
+        url,
+        ST_AsGeoJSON(geom) as geom,
+        z,
+        rotation_x as rotationX,
+        rotation_y as rotationY,
+        rotation_z as rotationZ,
+        depth_url as depthUrl
+        FROM sys_pano
+        WHERE pano_id = #{panoId}
+    </select>
+    <!--<update id="updatePanoById" parameterType="com.geosys.modules.sys.entity.SysPanoEntity">
+        UPDATE sys_pano
+        SET
+        layer_id = #{layerId},
+        pano_name = #{panoName},
+        geom = #{geom},
+        url = #{url},
+        z = #{z},
+        rotation_x = #{rotationX},
+        rotation_y = #{rotationY},
+        rotation_z = #{rotationZ},
+        depth_url = #{depthUrl}
+        WHERE pano_id = #{panoId}
+    </update>
+    <delete id="deleteById">
+        DELETE FROM sys_pano WHERE pano_id = #{panoId}
+    </delete>-->
+
+</mapper>

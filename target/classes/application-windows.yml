@@ -1,0 +1,73 @@
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: org.postgresql.Driver
+      url: jdbc:postgresql://geosys.org:5435/geoface?stringtype=unspecified
+      username: postgres
+      password: Geosys#2326
+
+#      #测试数据库
+#      driver-class-name: org.postgresql.Driver
+#      url: jdbc:postgresql://geosys.org:5435/sdms_v4?stringtype=unspecified
+#      username: postgres
+#      password: Geosys#2326
+
+geosys:
+#  #初始layerId需要增加的值
+#  layer_offset: 48
+
+  #文件存放路径
+  file_path: D:\SDMS_FILE\
+  #ffmpeg插件存放路径
+  ffmpeg_cmd_path: D:\software\ffmpeg\bin\
+  #obj2gltf插件存放路径
+  obj_cmd_path: C:\Users\pc\Desktop\obj\obj2gltf\
+  #LAStools插件存放路径
+  LAStools_cmd_path: D:\software\LAStools\bin\
+  #toolset插件存放路径
+  toolset_cmd_path: D:\software\sdms_script_toolset\
+  #是否开启3dtiles调整 开启：true 不开启：false
+  toolsetEnable: true
+  #windows下为 las2txt.exe; linux下为 las2txt
+  las_cmd: las2txt.exe
+  #gdal2tiles插件存放路径
+  gdal_cmd_path: C:\Program Files\GDAL\
+  #ifreedo插件存放路径
+  iFreedo_cmd_path: D:\software\iFreedo\plugins\dc\
+  #postgresql工具集路径
+  postgresql_cmd_path: D:\software\PostgreSQL\9.6\bin\
+  #shp2phsql工具名称，windows带.exe
+  shp2pgsql_cmd: shp2pgsql.exe
+  #geojson2shp工具名称，windows带.exe
+  ogr2ogr_cmd: ogr2ogr.exe
+  #接口地址前缀 http://必须写
+  api_prefix: http://localhost:8080/sdms
+  #sdms登录页
+  website: http://sdms.geosys.org
+  #服务器意外停止并重启后，是否将没有完成发布的任务标记为"发布中断"并删除没有发布完成的资源
+  #true 标记并删除；false 不标记 不删除
+  isMarkedShutdown: false
+  # 蒙脸服务器host
+  face_blur_server: https://vr3d.geosys.org
+  #license存放路径
+  lic_path: D:\sdms_hk_for_GeoSys.lic
+  #是否用apollo进行tiff处理
+  apollo: true
+  #apollo服务器host
+  apollo_host: https://apollo.geosys.org
+  #apollo服务名称
+  apollo_service: SDMS
+  #apollo微服务host
+  apollo_micro_host: https://apollo.geosys.org/micro/apollo
+  #apollo ecw文件路径
+  apollo_ecw_path: \apollo\ecw\
+  #potree微服务host
+  potree_micro_host: https://vr3d.geosys.org/micro/potree
+  domain: inter-geo.cn
+  #odm微服务host
+  odm_micro_host: https://odm.geosys.org/micro/odm
+  #rtsp转码协议
+  rtsp_micro_protocol: https
+  #rtsp转码服务host
+  rtsp_micro_host: stream.geosys.org

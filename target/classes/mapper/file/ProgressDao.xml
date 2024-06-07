@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.geosys.modules.file.dao.ProgressDao">
+
+    <select id="getLayerIdByState" resultType="java.lang.Long">
+        select layer_id from sys_progress where message = 'x_progress_error_shutdown_not_delete'
+    </select>
+</mapper>
