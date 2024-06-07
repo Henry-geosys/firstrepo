@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.geosys.modules.sys.dao.SysLayerDao">
+
+	<insert id="saveLayer">
+		<selectKey resultType="long" order="AFTER" keyProperty="layerId">
+			select currval('sys_layer_seq')
+		</selectKey>
+		INSERT INTO sys_layer (
+			"title",
+			"url",
+			"type",
+			"category",
+			"parameter",
+			"geometry",
+			"elevation",
+			"query_dataset",
+			"flatten_region",
+			"is_auto_open",
+			"user_id",
+			"potree_url",
+			"company_id",
+			"is_private",
+		    "size",
+		    "src",
+			"billboard",
+		    "url_2d"
+		)
+		VALUES
+		(
+			#{title},
+			#{url},
+			#{type},
+			#{category},
+			#{parameter},
+			st_geomfromgeojson(#{geometry}),
+			#{elevation},
+			#{queryDataset},
+			#{flattenRegion},
+			true,
+		 	${userId},
+		 	#{potreeUrl},
+		 	${companyId},
+		 	${isPrivate},
+			${size},
+		 	#{src},
+			#{billboard},
+		 	#{url_2d}
+		)
+	</insert>
+
+	<update id="updateLayer">
+		UPDATE
+			sys_layer
+		SET
+			title = #{title},
+			url = #{url},
+			type = #{type},
+			category = #{category},
+			parameter = #{parameter},
+			is_auto_open = #{isAutoOpen},
+			geometry = st_geomfromgeojson(#{geometry}),
+			elevation = #{elevation},
+			query_dataset = #{queryDataset},
+			flatten_region = #{flattenRegion},
+		    is_private = #{isPrivate},
+			script_anim = #{scriptAnim}
+		WHERE
+			layer_id = #{layerId}
+	</update>
+
+	<select id="queryPage" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		<!-- 管理员 查看本公司所有的资源-->
+		<if test="role == 'admin'">
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l , sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.company_id = ${companyId}
+			AND
+				l.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND category = #{category}
+			</if>
+			<if test="choose == 'mine'">
+				AND u.user_id = ${userId}
+			</if>
+			<if test="choose == 'other'">
+				AND u.user_id != ${userId}
+			</if>
+			<if test="isPublic == true">
+				AND is_private = false
+			</if>
+			<if test="createUserId != null">
+				AND u.user_id = ${createUserId}
+			</if>
+			order by l.create_time desc
+		</if>
+		<!-- 其他 查看自己创建的资源以及自己参与的资源-->
+		<if test="role == 'else'">
+			select * from (SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				is_private = false
+			AND
+				l.user_id = u.user_id
+			AND
+				l.company_id = ${companyId}
+			union
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.user_id = ${userId}
+			AND
+				l.company_id = ${companyId}
+			union
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.layer_id in (select layer_id from sys_user_layer where user_id = ${userId})
+			AND
+				l.company_id = ${companyId}
+			) t
+			where
+				t.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(t.title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND t.category = #{category}
+			</if>
+			<if test="choose == 'mine'">
+				AND t.user_id = ${userId}
+			</if>
+			<if test="choose == 'other'">
+				AND t.user_id != ${userId}
+			</if>
+			<if test="isPublic == true">
+				AND t.is_private = false
+			</if>
+			<if test="createUserId != null">
+				AND t.user_id = ${createUserId}
+			</if>
+			order by t.create_time desc
+		</if>
+	</select>
+
+	<select id="queryList" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		<!-- 管理员 查看本公司所有的资源-->
+		<if test="role == 'admin'">
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l , sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.company_id = ${companyId}
+			AND
+				l.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND category = #{category}
+			</if>
+			order by l.create_time desc
+		</if>
+		<!-- 其他 查看自己创建的资源以及自己参与的资源-->
+		<if test="role == 'else'">
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				is_private = false
+			AND
+				l.user_id = u.user_id
+			AND
+				l.company_id = ${companyId}
+			AND
+				l.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND category = #{category}
+			</if>
+			union
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.user_id = ${userId}
+			AND
+				l.company_id = ${companyId}
+			AND
+				l.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND category = #{category}
+			</if>
+			union
+			SELECT
+				layer_id,
+				title,
+				url,
+				TYPE,
+				category,
+				PARAMETER,
+				is_auto_open,
+				ST_AsGeoJSON(geometry) as geometry,
+				elevation,
+				query_dataset,
+				flatten_region,
+				potree_url,
+				l.user_id,
+				is_private,
+				l.create_time,
+				username,
+				l.company_id,
+				l.size,
+				l.billboard,
+				src,
+				l.url_2d
+			FROM
+				sys_layer l, sys_user u
+			WHERE
+				l.user_id = u.user_id
+			AND
+				l.layer_id in (select layer_id from sys_user_layer where user_id = ${userId})
+			AND
+				l.company_id = ${companyId}
+			AND
+				l.category &lt;&gt; 'AI'
+			<if test="title != null">
+				AND LOWER(title) like '%${title}%'
+			</if>
+			<if test="category != null">
+				AND category = #{category}
+			</if>
+		</if>
+	</select>
+
+	<select id="getById" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		SELECT
+			layer_id,
+			title,
+			url,
+			TYPE,
+			category,
+			PARAMETER,
+			is_auto_open,
+			ST_AsGeoJSON(geometry) as geometry,
+			elevation,
+			query_dataset,
+			flatten_region,
+		    potree_url,
+		    l.user_id,
+			is_private,
+			l.create_time,
+		    username,
+			l.company_id,
+			l.billboard,
+		    size,
+		    src,
+			url_2d
+		FROM
+			sys_layer l , sys_user u
+		WHERE
+			layer_id = #{layerId}
+		AND
+			l.user_id = u.user_id
+	</select>
+
+	<select id="listPotree" resultType="HashMap">
+		SELECT
+			layer_id,
+			title,
+		    potree_url
+		FROM
+			sys_layer
+		WHERE
+			layer_id in (select layer_id from sys_project_layer where project_id = ${projectId})
+		AND
+		    category = 'POINT CLOUD'
+	</select>
+
+	<select id="listByProject" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		SELECT
+			l.layer_id,
+			title,
+			url,
+			TYPE,
+			category,
+			PARAMETER,
+			is_auto_open,
+			ST_AsGeoJSON(geometry) as geometry,
+			elevation,
+			query_dataset,
+			flatten_region,
+			potree_url,
+			l.user_id,
+			l.is_private,
+			l.create_time,
+			username,
+			l.company_id,
+			l.script_anim,
+		    l.src,
+			l.billboard,
+			l.url_2d
+		FROM
+			sys_layer l
+		left join
+			sys_project_layer pl
+		on
+			l.layer_id = pl.layer_id and pl.project_id = ${projectId}
+		left join
+			sys_user u
+		on
+			l.user_id = u.user_id
+		WHERE
+			l.layer_id in (select layer_id from sys_project_layer where project_id = ${projectId})
+	</select>
+
+	<select id="listByWorkspace" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		SELECT
+			l.layer_id,
+			title,
+			url,
+			TYPE,
+			category,
+			PARAMETER,
+			is_auto_open,
+			ST_AsGeoJSON(geometry) as geometry,
+			elevation,
+			query_dataset,
+			flatten_region,
+			potree_url,
+			l.user_id,
+			is_private,
+			l.create_time,
+			username,
+			l.company_id,
+			l.script_anim,
+			l.src,
+			l.billboard,
+			wl.structure,
+			wl.is_open,
+		    wl.display_title,
+		    wl.order,
+			l.url_2d
+		FROM
+			sys_layer l
+		left join
+			sys_workspace_layer wl
+		on
+			l.layer_id = wl.layer_id and wl.workspace_id = ${workspaceId}
+		left join
+			sys_user u
+		on
+			l.user_id = u.user_id
+		WHERE
+			l.layer_id in (select layer_id from sys_workspace_layer where workspace_id = ${workspaceId})
+		order by
+			wl.order
+	</select>
+
+	<select id="querySrc" resultType="java.lang.String">
+		select src from sys_layer where layer_id = ${layerId}
+	</select>
+
+	<select id="queryUrl" resultType="java.lang.String">
+		select url from sys_layer where layer_id = ${layerId}
+	</select>
+
+	<select id="queryParam" resultType="java.lang.String">
+		select parameter from sys_layer where layer_id = ${layerId}
+	</select>
+
+	<update id="updateParam">
+		update sys_layer set parameter = #{param} where layer_id = ${layerId}
+	</update>
+
+	<select id="search" resultType="com.geosys.modules.sys.entity.SysLayerEntity">
+		select
+		    layer_id, title, url, type, category, parameter, is_auto_open, ST_AsGeoJSON(geometry) as geometry, elevation, query_dataset, flatten_region,
+			potree_url, user_id, is_private, create_time, company_id, size, billboard, src, collect_date, url_2d
+		from (
+			select * from sys_layer where company_id = ${companyId}
+			<if test="role != 'admin'">
+				and user_id &lt;&gt; ${userId} and is_private = false
+				union
+				select * from sys_layer where user_id = ${userId}
+			</if>
+		) temp
+		where 1 = 1
+		<if test="title != null">
+			and lower(title) like lower(concat('%', #{title} :: text, '%'))
+		</if>
+		<if test="category != null">
+			and category in ('${category}')
+		</if>
+		<if test="from != null and to != null">
+			and collect_date between #{from} and #{to}
+		</if>
+		<if test="geometry != null">
+			and ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON(#{geometry}), 4326), ST_SetSRID(geometry,4326))
+		</if>
+	</select>
+
+	<update id="updatePtGeom">
+		update sys_layer set geometry = ST_MakeEnvelope(${boundingBox}, 4326) where layer_id = ${layerId}
+	</update>
+
+	<update id="setMediaBoundary">
+		update
+			sys_layer
+		set
+		    geometry = (select st_concavehull(st_collect(m.location),0.99) from sys_media m where m.layer_id = ${layerId} and not((st_x(m.location) = -1 and st_y(m.location) = -1)or (st_x(m.location) = 0 and st_y(m.location) = 0)))
+		where
+		    layer_id = ${layerId}
+	</update>
+
+	<update id="setPanoBoundary">
+		update
+			sys_layer
+		set
+			geometry = (select st_concavehull(st_collect(p.geom::geometry),0.99) from sys_pano p where p.layer_id = ${layerId} and not((st_x(p.geom) = -1 and st_y(p.geom) = -1) or (st_x(p.geom) = 0 and st_y(p.geom) = 0)))
+		where
+			layer_id = ${layerId}
+	</update>
+
+	<select id="sumSize" resultType="java.lang.Integer">
+		select COALESCE(sum(l.size), 0) from sys_layer l where l.company_id = ${companyId}
+		<if test="projectId != null">
+			and l.layer_id in (select pl.layer_id from sys_project_layer pl where pl.project_id = ${projectId})
+		</if>
+	</select>
+</mapper>
